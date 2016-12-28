@@ -136,7 +136,10 @@ _Conf = {
 	sudoPass = Config.sudoPass,
 	whiteTime = Config.whiteTime,
 	captchaKey = Config.captchaKey,
+<<<<<<< HEAD
 	staticRegex = Config.staticRegex,
+=======
+>>>>>>> c28a0f225551866d0d36c3fcbc987caaad33429c
 
 	--解析开关设置
 	limitUaModulesIsOn = optionIsOn(Config.limitUaModules.state),
@@ -180,8 +183,11 @@ _Conf = {
 
 	normalCount = 0,
 	exceedCount = 0,
+<<<<<<< HEAD
 	
 	
+=======
+>>>>>>> c28a0f225551866d0d36c3fcbc987caaad33429c
 
 }
 

@@ -659,11 +659,7 @@ end
 --拒绝访问动作
 function Guard:forbiddenAction()
 		ngx.header.content_type = "text/html"
-<<<<<<< HEAD
 		ngx.exit(403)
-=======
-		ngx.exit(444)
->>>>>>> c28a0f225551866d0d36c3fcbc987caaad33429c
 end
 
 --展示验证码页面动作

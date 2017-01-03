@@ -8,8 +8,8 @@ local Config = {
 	-- 被动防御,限制UA请求模块。根据在一定时间内统计到的单个UA请求次数作限制（专门针对火车头采集工具）
 	-- state : 为此模块的状态，表示开启或关闭，可选值为On或Off;
 	-- maxReqs，amongTime : 在amongTime秒内允许请求的最大次数maxReqs，如默认的是在10s内最大允许请求50次。
-	limitUaModules = { state = "On" , maxReqs = 50 , amongTime = 10},
-
+	-- limitUaModules = { state = "On" , maxReqs = 50 , amongTime = 10},
+  limitUaModules = { state = "On" , maxReqs = 50 , amongTime = 10 },
 
 	-- 被动防御,限制请求模块。根据在一定时间内统计到的请求次数作限制,建议始终开启
 	-- state : 为此模块的状态，表示开启或关闭，可选值为On或Off;
@@ -106,6 +106,7 @@ local Config = {
 	
 	-- 正则匹配静态文件
 	staticRegex = [[.*?\.(css|js|jpg|jpeg|png|ico|svg|swf)$]],
+	dJsonDir = baseDir .. "domains.json",
 }
 
 return Config

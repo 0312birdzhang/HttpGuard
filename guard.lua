@@ -63,6 +63,7 @@ function Guard:ipInFileBlackList(ip)
 end
 
 
+
 --收集不在白名单中的蜘蛛ip
 function Guard:collectSpiderIp(ip, headers)
 	local spiderPattern = "baiduspider|360spider|sogou web spider|sogou inst spider|mediapartners|adsbot-google|googlebot"
@@ -75,12 +76,12 @@ function Guard:collectSpiderIp(ip, headers)
 	end
 end
 
---黑名单模块
-function Guard:blackListModules(ip, reqUri, headers)
-	local blackKey = ip.."black"
+-- 内存黑名单模块
+function Guard:blackListModules(domain,ip, reqUri, headers)
+	local blackKey = domain..ip.."black"
 	if _Conf.dict:get(blackKey) then --判断ip是否存在黑名单字典
 		self:debug("[IpblackListModules] ip "..ip.." in blacklist",ip,reqUri)
-		self:takeAction(ip,reqUri) --存在则执行相应动作
+		self:takeAction(domain,ip,reqUri) --存在则执行相应动作
 	end
 
 	if _Conf.limitUaModulesIsOn then
@@ -88,37 +89,48 @@ function Guard:blackListModules(ip, reqUri, headers)
 		--不存在UA直接抛验证码
 		if not userAgent then
 			self:debug("[limitUaModules] ip "..ip.." not have ua", ip, reqUri)
-			self:takeAction(ip,reqUri) --存在则执行相应动作
+			self:takeAction(domain,ip,reqUri) --存在则执行相应动作
 		end
 
 		local uaMd5 = ngx.md5(userAgent)
-		local blackUaKey = uaMd5 .. 'BlackUAKey'
+		local blackUaKey = domain .. uaMd5 .. 'BlackUAKey'
 		if _Conf.dict:get(blackUaKey) then --判断ua是否存在黑名单字典
 			self:debug("[UablackListModules] ip "..ip.." in ua blacklist".." "..userAgent, ip, reqUri)
-			self:takeAction(ip,reqUri) --存在则执行相应动作
+			self:takeAction(domain,ip,reqUri) --存在则执行相应动作
 		end
 	end
 end
 
 --限制UA请求速率模块
-function Guard:limitUaModules(ip, reqUri, address, headers)
+function Guard:limitUaModules(domain,ip, reqUri, address, headers)
 	local userAgent = headers["user-agent"]
 	--不存在UA直接抛验证码
 	if not userAgent then
 		self:debug("[limitUaModules] ip "..ip.." not have ua", ip, reqUri)
-		self:takeAction(ip,reqUri) --存在则执行相应动作
+		self:takeAction(domain,ip,reqUri) --存在则执行相应动作
 	end
-
+  -- 如果存在自定义的则使用自定义的
+  local amongTime = _Conf.limitUaModules.amongTime
+  local maxReqs = _Conf.limitUaModules.maxReqs
+  local blockTime = _Conf.blockTime
+  if getDrule(domain) then
+    local DLrule = getDLrule(domain,address)
+    if DLrule then
+       maxReqs = DLrule.maxReqs
+       amongTime = DLrule.amongTime
+       blockTime = DLrule.blockTime
+    end
+  end
 	local uaMd5 = ngx.md5(userAgent)
-	local blackUaKey = uaMd5 .. 'BlackUAKey'
-	local limitUaKey = uaMd5 .. 'LimitUaKey'
+	local blackUaKey = domain .. uaMd5 .. 'BlackUAKey'
+	local limitUaKey = domain .. uaMd5 .. 'LimitUaKey'
 	local uaTimes = _Conf.dict:get(limitUaKey) --获取此ua请求的次数
 
 	--增加一次请求记录
 	if uaTimes then
 		_Conf.dict:incr(limitUaKey, 1)
 	else
-		_Conf.dict:set(limitUaKey, 1, _Conf.limitUaModules.amongTime)
+		_Conf.dict:set(limitUaKey, 1, amongTime)
 		uaTimes = 0
 	end
 
@@ -126,45 +138,61 @@ function Guard:limitUaModules(ip, reqUri, address, headers)
 		self:debug("[limitUaModules] newUaTimes " .. newUaTimes .. "  " .. userAgent, ip, reqUri)
 
 		--判断请求数是否大于阀值,大于则添加黑名单
-		if newUaTimes > _Conf.limitUaModules.maxReqs then --判断是否请求数大于阀值
-			self:debug("[limitUaModules] ip "..ip.. " request exceed ".._Conf.limitUaModules.maxReqs.." "..userAgent, ip, reqUri)
-			_Conf.dict:set(blackUaKey, 0, _Conf.blockTime) --添加此ip到黑名单
-			self:log("[limitUaModules] IP "..ip.." visit "..newUaTimes.." times,block it. "..userAgent)
+		if newUaTimes > maxReqs then --判断是否请求数大于阀值
+			self:debug("[limitUaModules] ip "..ip.. " request exceed ".. maxReqs .." "..userAgent, ip, reqUri)
+			_Conf.dict:set(blackUaKey, 0,blockTime) --添加此ip到黑名单
+			self:log("[limitUaModules] IP "..ip.." visit ".. domain .. " " ..newUaTimes.." times,block it. "..userAgent)
 		end
 
 end
 
 
 --限制IP请求速率模块
-function Guard:limitReqModules(ip,reqUri,address)
-	if ngx.re.match(address,_Conf.limitUrlProtect,"i") then	
-		self:debug("[limitReqModules] address "..address.." match reg ".._Conf.limitUrlProtect,ip,reqUri)	
-		local blackKey = ip.."black"
-		local limitReqKey = ip.."limitreqkey" --定义limitreq key
-		local reqTimes = _Conf.dict:get(limitReqKey) --获取此ip请求的次数
-
-		--增加一次请求记录
+function Guard:limitReqModules(domain,ip,reqUri,address)
+  -- 匹配到全局规则或者匹配到域名自定义规则
+  if ngx.re.match(address,_Conf.limitUrlProtect,"i") or getDLrule(domain,address) ~= nil then
+      self:debug("[limitReqModules] address "..address.." match reg ".._Conf.limitUrlProtect,ip,reqUri)
+      local uriMd5 = ngx.md5(address)
+      local blackKey = domain .. ip.."black"
+      local limitReqKey = domain .. ip.."limitreqkey" --定义limitreq key
+      local reqTimes = _Conf.dict:get(limitReqKey) --获取此ip访问此域名的次数
+      local maxReqs = _Conf.limitReqModules.maxReqs
+      local blockTime = _Conf.blockTime
+      local amongTime = _Conf.limitReqModules.amongTime
+      self:debug("[limitReqModules] domain ".. domain,ip,reqUri)
+      
+      -- 如果存在自定义的则使用自定义的
+      self:debug(string.format("%s", getDrule(domain)),ip,reqUri)
+      if getDrule(domain) then
+        local DLrule = getDLrule(domain,address)
+          self:debug("[limitReqModules] DLrule maxReqs:".. string.format("%s",DLrule.maxReqs),ip,reqUri)
+          if DLrule then
+            maxReqs = DLrule.maxReqs
+            amongTime = DLrule.amongTime
+            blockTime = DLrule.blockTime
+          end
+       end
+      --增加一次请求记录
 		if reqTimes then
 			_Conf.dict:incr(limitReqKey, 1)
 		else
-			_Conf.dict:set(limitReqKey, 1, _Conf.limitReqModules.amongTime)
+			self:debug("[limitReqModules] ip ".. ip.." visit " .. domain.." ",ip,reqUri)
+			_Conf.dict:set(limitReqKey, 1,amongTime)
 			reqTimes = 0
 		end
 
 		local newReqTimes  = reqTimes + 1
 		self:debug("[limitReqModules] newReqTimes "..newReqTimes,ip,reqUri)
-
 		--判断请求数是否大于阀值,大于则添加黑名单
-		if newReqTimes > _Conf.limitReqModules.maxReqs then --判断是否请求数大于阀值
-			self:debug("[limitReqModules] ip "..ip.. " request exceed ".._Conf.limitReqModules.maxReqs,ip,reqUri)
-			_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
-			self:log("[limitReqModules] IP "..ip.." visit "..newReqTimes.." times,block it.")
-
+		if newReqTimes > maxReqs then --判断是否请求数大于阀值
+			self:debug("[limitReqModules] ip "..ip.. " request exceed "..maxReqs,ip,reqUri)
+			_Conf.dict:set(blackKey,0,blockTime) --添加此ip到黑名单
+			self:log("[limitReqModules] IP "..ip.." visit " .. domain .. " ".. newReqTimes.." times,block it.")
 			--大于20次的特别记录下来
 			if newReqTimes > 20 then
 				local filename = _Conf.logPath.."/large_flow.log"
 				local file = io.open(filename, "a+")
-				file:write(os.date('%Y-%m-%d %H:%M:%S').." IP "..ip.."\n")
+				file:write(os.date('%Y-%m-%d %H:%M:%S').." IP "..ip.." Domain " .. domain.. "\n")
 				file:close()
 			end
 		end
@@ -173,7 +201,7 @@ function Guard:limitReqModules(ip,reqUri,address)
 end
 
 --302转向模块
-function Guard:redirectModules(ip,reqUri,address)
+function Guard:redirectModules(domain,ip,reqUri,address)
 	if ngx.re.match(address,_Conf.redirectUrlProtect,"i") then
 		self:debug("[redirectModules] address "..address.." match reg ".._Conf.redirectUrlProtect,ip,reqUri)
 		local whiteKey = ip.."white302"
@@ -187,7 +215,7 @@ function Guard:redirectModules(ip,reqUri,address)
 			local now = ngx.time() --当前时间戳
 			local challengeTimesKey = table.concat({ip,"challenge302"})
 			local challengeTimesValue = _Conf.dict:get(challengeTimesKey)
-			local blackKey = ip.."black"
+			local blackKey = domain .. ip.."black"
 			local cookie_key = ngx.var["cookie_key302"] --获取cookie密钥
 			local cookie_expire = ngx.var["cookie_expire302"] --获取cookie密钥过期时间
 
@@ -344,7 +372,7 @@ function Guard:redirectModules(ip,reqUri,address)
 end
 
 --js跳转模块
-function Guard:JsJumpModules(ip,reqUri,address)
+function Guard:JsJumpModules(domain,ip,reqUri,address)
 	if ngx.re.match(address,_Conf.JsJumpUrlProtect,"i") then
 		self:debug("[JsJumpModules] address "..address.." match reg ".._Conf.JsJumpUrlProtect,ip,reqUri)
 		local whiteKey = ip.."whitejs"	
@@ -360,7 +388,7 @@ function Guard:JsJumpModules(ip,reqUri,address)
 			local now = ngx.time() --当前时间戳
 			local challengeTimesKey = table.concat({ip,"challengejs"})
 			local challengeTimesValue = _Conf.dict:get(challengeTimesKey)
-			local blackKey = ip.."black"
+			local blackKey = domain .. ip.."black"
 			local cookie_key = ngx.var["cookie_keyjs"] --获取cookie密钥
 			local cookie_expire = ngx.var["cookie_expirejs"] --获取cookie密钥过期时间
 
@@ -523,7 +551,7 @@ function Guard:JsJumpModules(ip,reqUri,address)
 end
 
 --cookie验证模块
-function Guard:cookieModules(ip,reqUri,address)
+function Guard:cookieModules(domain,ip,reqUri,address)
 	if ngx.re.match(address,_Conf.cookieUrlProtect,"i") then
 		self:debug("[cookieModules] address "..address.." match reg ".._Conf.cookieUrlProtect,ip,reqUri)
 		local whiteKey = ip.."whitecookie"
@@ -607,7 +635,7 @@ function Guard:getCaptcha()
 end
 
  --验证验证码
-function Guard:verifyCaptcha(ip)
+function Guard:verifyCaptcha(domain,ip)
 	ngx.req.read_body()
 	local captchaNum = ngx.var["cookie_captchaNum"] --获取cookie captchaNum值
 	local preurl = ngx.var["cookie_preurl"] --获取上次访问url
@@ -628,8 +656,8 @@ function Guard:verifyCaptcha(ip)
 			local userAgent = headers["user-agent"]
 			--不存在UA直接抛验证码
 			if not userAgent then
-				self:debug("[limitUaModules] ip "..ip.." not have ua", ip, reqUri)
-				self:takeAction(ip,reqUri) --存在则执行相应动作
+				self:debug("[limitUaModules] ip "..ip.." not have ua", ip)
+				self:takeAction(domain,ip,"") --存在则执行相应动作
 			end
 
 			local uaMd5 = ngx.md5(userAgent)
@@ -670,34 +698,50 @@ function Guard:captchaAction(reqUri)
 	ngx.exit(200)
 end
 
+
+-- 抽取出的执行验证码动作
+function Guard:takeCaptchaAction(domain,ip,reqUri)
+    local cookie_key = ngx.var["cookie_captchaKey"] --获取cookie captcha密钥
+    local cookie_expire = ngx.var["cookie_captchaExpire"] --获取cookie captcha过期时间
+    if cookie_expire and cookie_key then
+      local now = ngx.time()
+      local key_make = ngx.md5(table.concat({ip,_Conf.captchaKey,cookie_expire}))
+      local key_make = string.sub(key_make,"1","10")
+      self:debug("[takeAction] cookie_expire "..cookie_expire,ip,reqUri)
+      self:debug("[takeAction] cookie_key "..cookie_key,ip,reqUri)
+      self:debug("[takeAction] now "..now,ip,reqUri)
+      self:debug("[takeAction] key_make "..key_make,ip,reqUri)
+      if tonumber(cookie_expire) > now and cookie_key == key_make then
+        self:debug("[takeAction] cookie key is valid.",ip,reqUri)
+        return
+      else
+        self:debug("[takeAction] cookie key is invalid",ip,reqUri)
+        self:captchaAction(reqUri)
+      end 
+    else  
+      self:debug("[takeAction] return captchaAction",ip,reqUri)
+      self:captchaAction(reqUri)
+    end
+end 
+
 --执行相应动作
-function Guard:takeAction(ip,reqUri)
-	if _Conf.captchaAction then
-		local cookie_key = ngx.var["cookie_captchaKey"] --获取cookie captcha密钥
-		local cookie_expire = ngx.var["cookie_captchaExpire"] --获取cookie captcha过期时间
-		if cookie_expire and cookie_key then
-			local now = ngx.time()
-			local key_make = ngx.md5(table.concat({ip,_Conf.captchaKey,cookie_expire}))
-			local key_make = string.sub(key_make,"1","10")
-			self:debug("[takeAction] cookie_expire "..cookie_expire,ip,reqUri)
-			self:debug("[takeAction] cookie_key "..cookie_key,ip,reqUri)
-			self:debug("[takeAction] now "..now,ip,reqUri)
-			self:debug("[takeAction] key_make "..key_make,ip,reqUri)
-			if tonumber(cookie_expire) > now and cookie_key == key_make then
-				self:debug("[takeAction] cookie key is valid.",ip,reqUri)
-				return
-			else
-				self:debug("[takeAction] cookie key is invalid",ip,reqUri)
-				self:captchaAction(reqUri)
-			end	
-		else	
-			self:debug("[takeAction] return captchaAction",ip,reqUri)
-			self:captchaAction(reqUri)
-		end	
+function Guard:takeAction(domain,ip,reqUri)
+  -- 自定义禁用动作
+  local blockAction = getDBrule(domain)
+  local action = "forbidden"
+  if blockAction then
+    if blockAction == "forbidden" then
+      self:forbiddenAction()
+    elseif blockAction == "captcha" then
+      self:takeCaptchaAction(domain,ip,reqUri)
+    elseif blockAction == "iptables" then
+      ngx.thread.spawn(Guard.addToIptables,Guard,ip)
+    end
+	elseif _Conf.captchaAction then
+		self:takeCaptchaAction(domain,ip,reqUri)
 	elseif _Conf.forbiddenAction then
 		self:debug("[takeAction] return forbiddenAction",ip,reqUri)
 		self:forbiddenAction()
-
 	elseif _Conf.iptablesAction then
 		ngx.thread.spawn(Guard.addToIptables,Guard,ip)
 	end

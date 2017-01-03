@@ -1,4 +1,5 @@
 local Config = require("config")
+local cjson_safe = require "cjson.safe"
 
 --开关转换为true或false函数
 local function optionIsOn(options)
@@ -118,6 +119,47 @@ local function readCaptcha2Dict(dir,dict)
 	end	
 end
 
+
+-- 载入JSON文件
+-- loadConfig()调用
+local function loadjson(_path_name)
+  local x = readFile2Mem(_path_name)
+  local json = cjson_safe.decode(x) or {}
+  return json
+end
+
+-- 读取自定义域名配置
+local function loadDLreg(_json_path,dict)
+  local regJson = loadjson(_json_path)
+  for i,v in ipairs(regJson)  do
+    for k,j in pairs(v) do
+     if k then
+     -- 存储域名跟域名的配置
+     success, err, forcible = dict:set(k,cjson_safe.encode(j))
+     -- ngx.log(ngx.ERR,cjson_safe.encode(dict:get(k)))
+     end
+    end
+ end
+end
+
+-- 处理请求uri为location
+-- 判断str是否以substr开头
+local function startswith(str,substr)
+  if str == nil or substr == nil then
+      return nil
+  end
+  if string.find(str, substr) ~= 1 then
+      return false
+  else
+      return true
+  end
+end
+
+-- 比较字符串长度
+local function tab_cmp(a,b)
+  return string.len(a) > string.len(b)
+end
+
 _Conf = {
 	
 	--引入原始设置
@@ -167,6 +209,9 @@ _Conf = {
 	--新建字典(只用于记录验证码,防止丢失)
 	dict_captcha = ngx.shared.dict_captcha,
 
+  -- 新建字典(记录自定义域名规则)
+  dict_domain = ngx.shared.dict_domain,
+  
 	--验证码图片路径
 	captchaDir = Config.captchaDir,
 
@@ -180,7 +225,9 @@ _Conf = {
 
 	normalCount = 0,
 	exceedCount = 0,
-
+	
+	dJsonDir = Config.dJsonDir
+  	
 }
 
 --读取验证码到字典
@@ -221,3 +268,84 @@ if Config.keyDefine == "dynamic" then
 	_Conf.cookieModules.keySecret = makePassword()
 	_Conf.captchaKey = makePassword()
 end	
+
+
+-- 读取域名自定义限速 
+function getDomainModule(domain)
+  if Config.domainDefine[domain]  ~= nil and optionIsOn(Config.domainDefine[domain].state) then
+    return Config.domainDefine[domain]
+  else
+    return nil
+  end
+end
+
+
+
+
+
+-- 载入到共享内存
+loadDLreg(_Conf.dJsonDir,_Conf.dict_domain)
+
+-- 获取域名是否存在或开启规则
+function getDrule(domain)
+  local domainRule = _Conf.dict_domain:get(domain)
+   -- ngx.log(ngx.ERR,domainRule)
+  if domainRule and optionIsOn(cjson_safe.decode(domainRule).state) then
+    return true
+  end
+  return false
+end
+
+-- 获取域名的blockAction
+function getDBrule(domain)
+  local domainRule = _Conf.dict_domain:get(domain)
+  if domainRule then
+    return cjson_safe.decode(domainRule).blockAction
+  end
+  return nil
+end
+
+
+-- 获取域名的规则
+-- 支持nginx location匹配规则
+function getDLrule(domain,address)
+  local domainRule =  cjson_safe.decode(_Conf.dict_domain:get(domain)).locations
+  if domainRule then
+    local locations = {}
+    for k,j in pairs(domainRule) do
+      -- =前缀的指令严格匹配这个查询
+      if startswith(k,"=") and "= ".. address == k and optionIsOn(j.state) then
+        ngx.log(ngx.ERR,"location =")
+        return j
+      -- 普通字符匹配
+      elseif startswith(k,"^ ~") or startswith(k,"^~")  then
+        k = string.gsub(k,"%~","")
+        k = string.gsub(k,"% ","")
+        if string.find(address,k) and optionIsOn(j.state) then
+        ngx.log(ngx.ERR,"location ^~")
+          return j
+        end
+      -- 正则匹配
+      elseif startswith(k,"~") then
+        k = string.gsub(k,"%(","([")
+        k = string.gsub(k,"%)","])")
+        k = string.gsub(k,"%~ ","")
+        if string.find(address,k) and optionIsOn(j.state) then
+        ngx.log(ngx.ERR,"location ~")
+          return j
+        end
+      end
+      -- 字符串匹配
+      if string.find(address,k) and optionIsOn(j.state) then
+        table.insert(locations,k)
+      end
+    end
+    -- 取出匹配最多的location,并且
+    -- 排序最长的
+    table.sort(locations,tab_cmp)
+    k = locations[1]
+        ngx.log(ngx.ERR,"location ".. k)
+    return domainRule[k]
+  end
+  return nil
+end

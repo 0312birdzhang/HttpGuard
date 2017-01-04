@@ -51,7 +51,7 @@ else
     --白名单模块
     if not Guard:ipInWhiteList(ip) then
       --收集不在白名单库里面的蜘蛛
-      Guard:collectSpiderIp(ip, headers)
+      -- Guard:collectSpiderIp(ip, headers)
   
       --黑名单模块
       Guard:blackListModules(domain,ip, reqUri, headers)

@@ -102,7 +102,7 @@ local Config = {
 	debug = true,
 
 	--日志目录,一般不需要修改.但需要设置logs所有者为nginx运行用户，如nginx运行用户为www，则命令为chown www logs
-	logPath = baseDir.."logs/",
+	logPath = "/data/logs/",
 	
 	-- 正则匹配静态文件
 	staticRegex = [[.*?\.(css|js|jpg|jpeg|png|ico|svg|swf)$]],

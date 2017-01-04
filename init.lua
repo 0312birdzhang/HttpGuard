@@ -315,14 +315,14 @@ function getDLrule(domain,address)
     for k,j in pairs(domainRule) do
       -- =前缀的指令严格匹配这个查询
       if startswith(k,"=") and "= ".. address == k and optionIsOn(j.state) then
-        ngx.log(ngx.ERR,"location =")
+        -- ngx.log(ngx.ERR,"location =")
         return j
       -- 普通字符匹配
       elseif startswith(k,"^ ~") or startswith(k,"^~")  then
         k = string.gsub(k,"%~","")
         k = string.gsub(k,"% ","")
         if string.find(address,k) and optionIsOn(j.state) then
-        ngx.log(ngx.ERR,"location ^~")
+        -- ngx.log(ngx.ERR,"location ^~")
           return j
         end
       -- 正则匹配
@@ -331,7 +331,7 @@ function getDLrule(domain,address)
         k = string.gsub(k,"%)","])")
         k = string.gsub(k,"%~ ","")
         if string.find(address,k) and optionIsOn(j.state) then
-        ngx.log(ngx.ERR,"location ~")
+        -- ngx.log(ngx.ERR,"location ~")
           return j
         end
       end
@@ -344,7 +344,7 @@ function getDLrule(domain,address)
     -- 排序最长的
     table.sort(locations,tab_cmp)
     k = locations[1]
-        ngx.log(ngx.ERR,"location ".. k)
+    -- ngx.log(ngx.ERR,"location ".. k)
     return domainRule[k]
   end
   return nil

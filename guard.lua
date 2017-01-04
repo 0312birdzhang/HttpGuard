@@ -67,8 +67,11 @@ end
 --收集不在白名单中的蜘蛛ip
 function Guard:collectSpiderIp(ip, headers)
 	local spiderPattern = "baiduspider|360spider|sogou web spider|sogou inst spider|mediapartners|adsbot-google|googlebot"
-	local userAgent = string.lower(headers["user-agent"])
-	if ngx.re.match(userAgent, spiderPattern) then 
+	local userAgent = headers["user-agent"]
+  if userAgent then
+   userAgent = string.lower(headers["user-agent"])
+  end
+    if userAgent and ngx.re.match(userAgent, spiderPattern) then 
 		local filename = _Conf.logPath.."/spider_ip.log"
 		local file = io.open(filename, "a+")
 		file:write(os.date('%Y-%m-%d %H:%M:%S').." IP "..ip.." UA "..userAgent.."\n")
@@ -162,11 +165,10 @@ function Guard:limitReqModules(domain,ip,reqUri,address)
       self:debug("[limitReqModules] domain ".. domain,ip,reqUri)
       
       -- 如果存在自定义的则使用自定义的
-      self:debug(string.format("%s", getDrule(domain)),ip,reqUri)
       if getDrule(domain) then
         local DLrule = getDLrule(domain,address)
-          self:debug("[limitReqModules] DLrule maxReqs:".. string.format("%s",DLrule.maxReqs),ip,reqUri)
           if DLrule then
+            self:debug("[limitReqModules] DLrule maxReqs:".. string.format("%s",DLrule.maxReqs),ip,reqUri)
             maxReqs = DLrule.maxReqs
             amongTime = DLrule.amongTime
             blockTime = DLrule.blockTime
@@ -728,7 +730,6 @@ end
 function Guard:takeAction(domain,ip,reqUri)
   -- 自定义禁用动作
   local blockAction = getDBrule(domain)
-  local action = "forbidden"
   if blockAction then
     if blockAction == "forbidden" then
       self:forbiddenAction()

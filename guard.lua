@@ -144,7 +144,7 @@ function Guard:limitUaModules(domain,ip, reqUri, address, headers)
 		if newUaTimes > maxReqs then --判断是否请求数大于阀值
 			self:debug("[limitUaModules] ip "..ip.. " request exceed ".. maxReqs .." "..userAgent, ip, reqUri)
 			_Conf.dict:set(blackUaKey, 0,blockTime) --添加此ip到黑名单
-			self:log("[limitUaModules] IP "..ip.." visit ".. domain .. " " ..newUaTimes.." times,block it. "..userAgent)
+			self:log("[limitUaModules] IP "..ip.." visit ".. domain .. "  UA ".. userAgent .. " " .. newUaTimes.." times,block it. "..userAgent)
 		end
 
 end
@@ -153,8 +153,9 @@ end
 --限制IP请求速率模块
 function Guard:limitReqModules(domain,ip,reqUri,address)
   -- 匹配到全局规则或者匹配到域名自定义规则
-  if ngx.re.match(address,_Conf.limitUrlProtect,"i") or getDLrule(domain,address) ~= nil then
-      self:debug("[limitReqModules] address "..address.." match reg ".._Conf.limitUrlProtect,ip,reqUri)
+  --  ngx.re.match(address,_Conf.limitUrlProtect,"i")
+  if  getDLrule(domain,address)  then
+      -- self:debug("[limitReqModules] address "..address.." match reg ".._Conf.limitUrlProtect,ip,reqUri)
       local uriMd5 = ngx.md5(address)
       local blackKey = domain .. ip.."black"
       local limitReqKey = domain .. ip.."limitreqkey" --定义limitreq key
@@ -189,7 +190,7 @@ function Guard:limitReqModules(domain,ip,reqUri,address)
 		if newReqTimes > maxReqs then --判断是否请求数大于阀值
 			self:debug("[limitReqModules] ip "..ip.. " request exceed "..maxReqs,ip,reqUri)
 			_Conf.dict:set(blackKey,0,blockTime) --添加此ip到黑名单
-			self:log("[limitReqModules] IP "..ip.." visit " .. domain .. " ".. newReqTimes.." times,block it.")
+			self:log("[limitReqModules] IP "..ip.." visit " .. domain .. " uri ".. address .. newReqTimes.." times,block it.")
 			--大于20次的特别记录下来
 			if newReqTimes > 20 then
 				local filename = _Conf.logPath.."/large_flow.log"

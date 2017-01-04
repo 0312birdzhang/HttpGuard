@@ -57,7 +57,7 @@ else
       Guard:blackListModules(domain,ip, reqUri, headers)
   
       --限制UA请求速率模块
-      if getDrule(domain)  or _Conf.limitUaModulesIsOn then
+      if _Conf.limitUaModulesIsOn then
         Guard:debug("[limitUaModules] limitUaModules is on.",ip,reqUri)
         Guard:limitUaModules(domain,ip, reqUri, address, headers)
       end

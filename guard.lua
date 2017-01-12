@@ -80,8 +80,9 @@ function Guard:collectSpiderIp(ip, headers)
 end
 
 -- 内存黑名单模块
-function Guard:blackListModules(domain,ip, reqUri, headers)
-	local blackKey = domain..ip.."black"
+function Guard:blackListModules(domain,ip, reqUri, headers,address)
+	local uriMd5 = ngx.md5(address)
+	local blackKey = domain..ip..uriMd5.."black"
 	if _Conf.dict:get(blackKey) then --判断ip是否存在黑名单字典
 		self:debug("[IpblackListModules] ip "..ip.." in blacklist",ip,reqUri)
 		self:takeAction(domain,ip,reqUri) --存在则执行相应动作
@@ -144,7 +145,7 @@ function Guard:limitUaModules(domain,ip, reqUri, address, headers)
 		if newUaTimes > maxReqs then --判断是否请求数大于阀值
 			self:debug("[limitUaModules] ip "..ip.. " request exceed ".. maxReqs .." "..userAgent, ip, reqUri)
 			_Conf.dict:set(blackUaKey, 0,blockTime) --添加此ip到黑名单
-			self:log("[limitUaModules] IP "..ip.." visit ".. domain .. "  UA ".. userAgent .. " " .. newUaTimes.." times,block it. "..userAgent)
+			self:log("[limitUaModules] "..ip.." visit ".. domain .. " ".. userAgent .. " " .. newUaTimes.." times, block")
 		end
 
 end
@@ -157,8 +158,8 @@ function Guard:limitReqModules(domain,ip,reqUri,address)
   if  getDLrule(domain,address)  then
       -- self:debug("[limitReqModules] address "..address.." match reg ".._Conf.limitUrlProtect,ip,reqUri)
       local uriMd5 = ngx.md5(address)
-      local blackKey = domain .. ip.."black"
-      local limitReqKey = domain .. ip.."limitreqkey" --定义limitreq key
+      local blackKey = domain .. ip..uriMd5.."black"
+      local limitReqKey = domain .. ip..uriMd5.."limitreqkey" --定义limitreq key
       local reqTimes = _Conf.dict:get(limitReqKey) --获取此ip访问此域名的次数
       local maxReqs = _Conf.limitReqModules.maxReqs
       local blockTime = _Conf.blockTime
@@ -190,14 +191,14 @@ function Guard:limitReqModules(domain,ip,reqUri,address)
 		if newReqTimes > maxReqs then --判断是否请求数大于阀值
 			self:debug("[limitReqModules] ip "..ip.. " request exceed "..maxReqs,ip,reqUri)
 			_Conf.dict:set(blackKey,0,blockTime) --添加此ip到黑名单
-			self:log("[limitReqModules] IP "..ip.." visit " .. domain .. " uri ".. address .. newReqTimes.." times,block it.")
+			self:log("[limitReqModules] "..ip.." visit " .. domain .. " ".. address .." ".. newReqTimes.." times, block")
 			--大于20次的特别记录下来
-			if newReqTimes > 20 then
-				local filename = _Conf.logPath.."/large_flow.log"
-				local file = io.open(filename, "a+")
-				file:write(os.date('%Y-%m-%d %H:%M:%S').." IP "..ip.." Domain " .. domain.. "\n")
-				file:close()
-			end
+--			if newReqTimes > 20 then
+--				local filename = _Conf.logPath.."/large_flow.log"
+--				local file = io.open(filename, "a+")
+--				file:write(os.date('%Y-%m-%d %H:%M:%S').." IP "..ip.." Domain " .. domain.. "\n")
+--				file:close()
+--			end
 		end
 
 	end
@@ -261,7 +262,7 @@ function Guard:redirectModules(domain,ip,reqUri,address)
 						_Conf.dict:incr(challengeTimesKey,1)
 						if challengeTimesValue + 1> _Conf.redirectModules.verifyMaxFail then
 							self:debug("[redirectModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-							self:log("[redirectModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.")
+							self:log("[redirectModules] "..ip.." challenge-cookie-failed " .. domain .. " ".. address .. " " .. challengeTimesValue.." times, block")
 							_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 						end	
 					else
@@ -306,7 +307,7 @@ function Guard:redirectModules(domain,ip,reqUri,address)
 							_Conf.dict:incr(challengeTimesKey,1)
 							if challengeTimesValue + 1 > _Conf.redirectModules.verifyMaxFail then
 								self:debug("[redirectModules] client "..ip.." challenge 302key failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-								self:log("[redirectModules] client "..ip.." challenge 302key failed "..challengeTimesValue.." times,add to blacklist.")
+								self:log("[redirectModules] "..ip.." challenge-302key-failed ".. domain .. " " .. address .. " " ..challengeTimesValue.." times, block")
 								_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 							end	
 						else
@@ -338,7 +339,7 @@ function Guard:redirectModules(domain,ip,reqUri,address)
 						_Conf.dict:incr(challengeTimesKey,1)
 						if challengeTimesValue +1 > _Conf.redirectModules.verifyMaxFail then
 							self:debug("[redirectModules] client "..ip.." challenge 302key failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-							self:log("[redirectModules] client "..ip.." challenge 302key failed "..challengeTimesValue.." times,add to blacklist.")
+							self:log("[redirectModules] "..ip.." challenge-302key-failed ".. domain .. " " .. address .. " " ..challengeTimesValue.." times, block")
 							_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 						end	
 					else
@@ -411,7 +412,7 @@ function Guard:JsJumpModules(domain,ip,reqUri,address)
 						_Conf.dict:incr(challengeTimesKey,1)
 						if challengeTimesValue +1 > _Conf.JsJumpModules.verifyMaxFail then
 							self:debug("[JsJumpModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-							self:log("[JsJumpModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.")
+							self:log("[JsJumpModules] "..ip.." challenge-cookie-failed ".. domain .. " ".. address .." "..challengeTimesValue.." times, block")
 							_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 						end	
 					else
@@ -474,7 +475,7 @@ function Guard:JsJumpModules(domain,ip,reqUri,address)
 							_Conf.dict:incr(challengeTimesKey,1)
 							if challengeTimesValue + 1 > _Conf.JsJumpModules.verifyMaxFail then
 								self:debug("[JsJumpModules] client "..ip.." challenge jskey failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-								self:log("[JsJumpModules] client "..ip.." challenge jskey failed "..challengeTimesValue.." times,add to blacklist.")
+								self:log("[JsJumpModules] "..ip.." challenge-jskey-failed ".. domain .. " ".. address .." "..challengeTimesValue.." times, block")
 								_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 							end	
 						else
@@ -513,7 +514,7 @@ function Guard:JsJumpModules(domain,ip,reqUri,address)
 						_Conf.dict:incr(challengeTimesKey,1)
 						if challengeTimesValue + 1 > _Conf.JsJumpModules.verifyMaxFail then
 							self:debug("[JsJumpModules] client "..ip.." challenge jskey failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-							self:log("[JsJumpModules] client "..ip.." challenge jskey failed "..challengeTimesValue.." times,add to blacklist.")
+							self:log("[JsJumpModules] "..ip.." challenge-jskey-failed ".. domain .. " ".. address .." "..challengeTimesValue.." times, block")
 							_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 						end	
 					else
@@ -588,7 +589,7 @@ function Guard:cookieModules(domain,ip,reqUri,address)
 						_Conf.dict:incr(challengeTimesKey,1)
 						if challengeTimesValue +1 > _Conf.cookieModules.verifyMaxFail then
 							self:debug("[cookieModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-							self:log("[cookieModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.")
+							self:log("[cookieModules] "..ip.." challenge-cookie-failed ".. domain .. " ".. address .." "..challengeTimesValue.." times, block")
 							_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 						end
 					else
@@ -604,7 +605,7 @@ function Guard:cookieModules(domain,ip,reqUri,address)
 					_Conf.dict:incr(challengeTimesKey,1)
 					if challengeTimesValue +1 > _Conf.cookieModules.verifyMaxFail then
 						self:debug("[cookieModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.",ip,reqUri)
-						self:log("[cookieModules] client "..ip.." challenge cookie failed "..challengeTimesValue.." times,add to blacklist.")
+						self:log("[cookieModules] "..ip.." challenge-cookie-failed ".. domain .. " ".. address .." "..challengeTimesValue.." times, block")
 						_Conf.dict:set(blackKey,0,_Conf.blockTime) --添加此ip到黑名单
 					end
 				else

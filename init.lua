@@ -314,7 +314,7 @@ function getDLrule(domain,address)
     local locations = {}
     for k,j in pairs(domainRule) do
       -- =前缀的指令严格匹配这个查询
-      if startswith(k,"=") and "= ".. address == k and optionIsOn(j.state) then
+      if startswith(k,"=") and ( "= ".. address == k  or "=".. address == k ) and optionIsOn(j.state) then
         -- ngx.log(ngx.ERR,"location =")
         return j
       -- 普通字符匹配

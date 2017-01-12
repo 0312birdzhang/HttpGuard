@@ -54,7 +54,7 @@ else
       -- Guard:collectSpiderIp(ip, headers)
   
       --黑名单模块
-      Guard:blackListModules(domain,ip, reqUri, headers)
+      Guard:blackListModules(domain,ip, reqUri, headers,address)
   
       --限制UA请求速率模块
       if _Conf.limitUaModulesIsOn then

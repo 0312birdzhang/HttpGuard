@@ -57,12 +57,12 @@ lua_max_running_timers 1;
 
 ### 配置HttpGuard
 
-详细配置说明在[config.lua](https://github.com/0312birdzhang/HttpGuard/blob/master/config.lua)中，请根据需求进行配置
+详细配置说明在[config.lua](config.lua)中，请根据需求进行配置
 
 
 #### 自定义规则
 
-自定义规则在[domains.json](https://github.com/0312birdzhang/HttpGuard/blob/master/domains.json)中，json格式如下
+自定义规则在[domains.json](domains.json)中，json格式如下
 
 ```
 [

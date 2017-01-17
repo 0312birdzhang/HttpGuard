@@ -42,7 +42,8 @@ local function parseRuleFile(filePath)
 	local rfile = assert(io.open(filePath,'r'))
 	for line in rfile:lines() do
 		if not (string.match(line,"^ *$")) then
-			list = list.."|"..line
+		  -- 拼接的同时去掉注释
+			list = list.."|"..string.gsub(line,"#[^\n]*",'')
 		end
 	end
 	list = string.gsub(list,"^%|",'')

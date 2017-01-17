@@ -738,6 +738,7 @@ function Guard:takeAction(domain,ip,reqUri)
     elseif blockAction == "captcha" then
       self:takeCaptchaAction(domain,ip,reqUri)
     elseif blockAction == "iptables" then
+      
       ngx.thread.spawn(Guard.addToIptables,Guard,ip)
     end
 	elseif _Conf.captchaAction then

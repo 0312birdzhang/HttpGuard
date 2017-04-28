@@ -12,7 +12,9 @@ local remoteIp = ngx.var.remote_addr
 local headers = ngx.req.get_headers()
 
 local ip = Guard:getRealIp(remoteIp,headers)
-local domain = ngx.unescape_uri(ngx.var.http_host)
+local domain = ngx.unescape_uri(ngx.var.host)
+-- 避免因为加入Host的header导致判断域名出错，然后匹配不到规则的bug
+--local domain = ngx.unescape_uri(ngx.var.http_host)
 local reqUri = ngx.var.request_uri
 local uri = ngx.var.uri
 local address = ''

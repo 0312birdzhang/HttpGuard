@@ -38,8 +38,7 @@ end
 --白名单模块
 function Guard:ipInWhiteList(ip)
 	if _Conf.whiteIpModulesIsOn then --判断是否开启白名单模块
-		self:debug("[ipInWhiteList] whiteIpModules is on.",ip,"")
-
+--		self:debug("[ipInWhiteList] whiteIpModules is on.",ip,"")
 		if ngx.re.match(ip, _Conf.whiteIpList) then --匹配白名单列表
 			self:debug("[ipInWhiteList] ip "..ip.. " match white list ".._Conf.whiteIpList,ip,"")
 			return true

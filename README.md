@@ -48,8 +48,9 @@ cd /data/www/waf/captcha/
 
 ```
 lua_package_path "/data/www/waf/?.lua";
-lua_shared_dict guard_dict 100m;
+lua_shared_dict guard_dict 30m;
 lua_shared_dict dict_captcha 70m;
+lua_shared_dict dict_domain 10m;
 init_by_lua_file '/data/www/waf/init.lua';
 access_by_lua_file '/data/www/waf/runtime.lua';
 lua_max_running_timers 1;

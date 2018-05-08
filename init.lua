@@ -312,7 +312,7 @@ end
 function getDLrule(domain,address)
   local domainInfo = cjson_safe.decode(_Conf.dict_domain:get(domain))
   if domainInfo then
-     domainRule =  domainInfo.locations
+     local domainRule =  domainInfo.locations
      if domainRule then
        local locations = {}
        for k,j in pairs(domainRule) do

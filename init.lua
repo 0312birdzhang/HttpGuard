@@ -310,43 +310,46 @@ end
 -- 获取域名的规则
 -- 支持nginx location匹配规则
 function getDLrule(domain,address)
-  local domainRule =  cjson_safe.decode(_Conf.dict_domain:get(domain)).locations
-  if domainRule then
-    local locations = {}
-    for k,j in pairs(domainRule) do
-      -- =前缀的指令严格匹配这个查询
-      if startswith(k,"=") and ( "= ".. address == k  or "=".. address == k ) and optionIsOn(j.state) then
-        -- ngx.log(ngx.ERR,"location =")
-        return j
-      -- 普通字符匹配
-      elseif startswith(k,"^ ~") or startswith(k,"^~")  then
-        k = string.gsub(k,"%~","")
-        k = string.gsub(k,"% ","")
-        if string.find(address,k) and optionIsOn(j.state) then
-        -- ngx.log(ngx.ERR,"location ^~")
-          return j
-        end
-      -- 正则匹配
-      elseif startswith(k,"~") then
-        k = string.gsub(k,"%(","([")
-        k = string.gsub(k,"%)","])")
-        k = string.gsub(k,"%~ ","")
-        if string.find(address,k) and optionIsOn(j.state) then
-        -- ngx.log(ngx.ERR,"location ~")
-          return j
-        end
-      end
-      -- 字符串匹配
-      if string.find(address,k) and optionIsOn(j.state) then
-        table.insert(locations,k)
-      end
-    end
-    -- 取出匹配最多的location,并且
-    -- 排序最长的
-    table.sort(locations,tab_cmp)
-    k = locations[1]
-    -- ngx.log(ngx.ERR,"location ".. k)
-    return domainRule[k]
+  local domainInfo = cjson_safe.decode(_Conf.dict_domain:get(domain))
+  if domainInfo then
+     domainRule =  domainInfo.locations
+     if domainRule then
+       local locations = {}
+       for k,j in pairs(domainRule) do
+         -- =前缀的指令严格匹配这个查询
+         if startswith(k,"=") and ( "= ".. address == k  or "=".. address == k ) and optionIsOn(j.state) then
+           -- ngx.log(ngx.ERR,"location =")
+           return j
+         -- 普通字符匹配
+         elseif startswith(k,"^ ~") or startswith(k,"^~")  then
+           k = string.gsub(k,"%~","")
+           k = string.gsub(k,"% ","")
+           if string.find(address,k) and optionIsOn(j.state) then
+           -- ngx.log(ngx.ERR,"location ^~")
+             return j
+           end
+         -- 正则匹配
+         elseif startswith(k,"~") then
+           k = string.gsub(k,"%(","([")
+           k = string.gsub(k,"%)","])")
+           k = string.gsub(k,"%~ ","")
+           if string.find(address,k) and optionIsOn(j.state) then
+           -- ngx.log(ngx.ERR,"location ~")
+             return j
+           end
+         end
+         -- 字符串匹配
+         if string.find(address,k) and optionIsOn(j.state) then
+           table.insert(locations,k)
+         end
+       end
+       -- 取出匹配最多的location,并且
+       -- 排序最长的
+       table.sort(locations,tab_cmp)
+       k = locations[1]
+       -- ngx.log(ngx.ERR,"location ".. k)
+       return domainRule[k]
+     end
   end
   return nil
 end

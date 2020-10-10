@@ -37,28 +37,36 @@ end
 
 --白名单模块
 function Guard:ipInWhiteList(ip)
-	if _Conf.whiteIpModulesIsOn then --判断是否开启白名单模块
---		self:debug("[ipInWhiteList] whiteIpModules is on.",ip,"")
-		if ngx.re.match(ip, _Conf.whiteIpList) then --匹配白名单列表
-			self:debug("[ipInWhiteList] ip "..ip.. " match white list ".._Conf.whiteIpList,ip,"")
-			return true
-		else
-			return false
-		end	
-	end
+  if _Conf.whiteIpModulesIsOn then
+    -- self:debug("[ipInWhiteList] whiteIpModules is on. ",ip,"")
+    if _Conf.whiteIpList ~= nil then
+      for _,rule in pairs(_Conf.whiteIpList) do
+        rule = string.gsub(rule, "*","")
+        if rule ~= "" and string.sub(ip,1,string.len(rule)) == rule then
+          self:debug("[ipInWhiteList] ip "..ip.. " match white list ","","")
+          return true
+        end
+      end
+    end
+    return false
+  end
 end
 
+-- 黑名单模块
 function Guard:ipInFileBlackList(ip)
-	if _Conf.fileBlackIpModulesIsOn then
-		self:debug("[IpInFileBlackList] fileBlackIpModules is on.",ip,"")
-
-		if ngx.re.match(ip, _Conf.fileBlackIpList) then --匹配黑名单列表
-			self:debug("[ipInFileBlackList] ip "..ip.. " match black list ".._Conf.fileBlackIpList,ip,"")
-			return true
-		else
-			return false
-		end	
-	end
+  if _Conf.fileBlackIpModulesIsOn then
+    -- self:debug("[IpInFileBlackList] fileBlackIpModules is on. ",ip,"")
+    if _Conf.fileBlackIpList ~= nil then
+      for _,rule in pairs(_Conf.fileBlackIpList) do
+        rule = string.gsub(rule, "*","")
+        if rule ~= "" and string.sub(ip,1,string.len(rule)) == rule then
+          self:debug("[ipInFileBlackList] ip "..ip.. " match black list ","","")
+          return true
+        end
+      end
+    end
+    return false
+  end
 end
 
 

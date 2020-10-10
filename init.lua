@@ -37,7 +37,7 @@ local function makePassword()
 end
 
 --解析文件到正则字符串函数
-local function parseRuleFile(filePath)
+local function parseRuleFileOrigin(filePath)
 	local list = ''
 	local rfile = assert(io.open(filePath,'r'))
 	for line in rfile:lines() do
@@ -49,6 +49,20 @@ local function parseRuleFile(filePath)
 	list = string.gsub(list,"^%|",'')
 	rfile:close()
 	return list
+end
+
+local function parseRuleFile(filePath)
+  local rfile = assert(io.open(filePath,'r'))
+  if rfile == nil then
+    return
+  end
+  local RULE_TABLE = {}
+  for line in rfile:lines() do
+      line = string.gsub(line,"#.*","")
+      table.insert(RULE_TABLE, line)
+  end
+  rfile:close()
+  return(RULE_TABLE)
 end
 
 --解析动作
@@ -193,10 +207,10 @@ _Conf = {
 	cookieModulesIsOn = optionIsOn(Config.cookieModules.state),
 
 	--解析文件到正则
-	redirectUrlProtect = parseRuleFile(Config.redirectModules.urlProtect),
-	JsJumpUrlProtect = parseRuleFile(Config.JsJumpModules.urlProtect),
-	limitUrlProtect = parseRuleFile(Config.limitReqModules.urlProtect),
-	cookieUrlProtect = parseRuleFile(Config.cookieModules.urlProtect),
+	redirectUrlProtect = parseRuleFileOrigin(Config.redirectModules.urlProtect),
+	JsJumpUrlProtect = parseRuleFileOrigin(Config.JsJumpModules.urlProtect),
+	limitUrlProtect = parseRuleFileOrigin(Config.limitReqModules.urlProtect),
+	cookieUrlProtect = parseRuleFileOrigin(Config.cookieModules.urlProtect),
 	whiteIpList = parseRuleFile(Config.whiteIpModules.ipList),
 	fileBlackIpList = parseRuleFile(Config.blackIpModules.ipList),
 

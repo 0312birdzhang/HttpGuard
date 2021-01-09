@@ -73,19 +73,31 @@ lua_max_running_timers 1;
         "blockAction":"captcha",
         "locations":{
             "/":{
-                "state":"On",
+                "limitIpState": "On",
+                "limitUaState": "Off",
+                "redirectState": "Off",
+                "jsJumpState": "Off",
+                "cookieState": "Off",                
                 "maxReqs":10,
                 "amongTime":60,
                 "blockTime":600
             },
             "/test":{
-                "state":"Off",
+                "limitIpState": "On",
+                "limitUaState": "Off",
+                "redirectState": "Off",
+                "jsJumpState": "Off",
+                "cookieState": "Off", 
                 "maxReqs":10,
                 "amongTime":60,
                 "blockTime":600
            },
            "/test/abc":{
-                "state":"Off",
+                "limitIpState": "On",
+                "limitUaState": "Off",
+                "redirectState": "Off",
+                "jsJumpState": "Off",
+                "cookieState": "Off", 
                 "maxReqs":10,
                 "amongTime":60,
                 "blockTime":600

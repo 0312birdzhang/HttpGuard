@@ -197,6 +197,7 @@ _Conf = {
 	whiteTime = Config.whiteTime,
 	captchaKey = Config.captchaKey,
 	staticRegex = Config.staticRegex,
+	captchaToIptables = Config.captchaToIptables,
 
 	--解析开关设置
 	limitUaModulesIsOn = optionIsOn(Config.limitUaModules.state),
@@ -208,6 +209,7 @@ _Conf = {
 	redirectModulesIsOn = optionIsOn(Config.redirectModules.state),
 	JsJumpModulesIsOn = optionIsOn(Config.JsJumpModules.state),
 	cookieModulesIsOn = optionIsOn(Config.cookieModules.state),
+	captchaToIptablesIsOn = optionIsOn(Config.captchaToIptables.state),
 
 	--解析文件到正则
 	redirectUrlProtect = parseRuleFileOrigin(Config.redirectModules.urlProtect),

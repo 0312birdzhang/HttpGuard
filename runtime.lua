@@ -57,37 +57,33 @@ else
   
       --黑名单模块
       Guard:blackListModules(domain,ip, reqUri, headers,address)
-  
+      
+      local domainRule = getDomainRule(domain)
+      -- 匹配到自定义规则域名location或者全局开了，都可以进入各自方法
+      -- 全局用全局的配置，自定义用location里面的配置
+      
       --限制UA请求速率模块
-      if _Conf.limitUaModulesIsOn then
-        Guard:debug("[limitUaModules] limitUaModules is on.",ip,reqUri)
+      if domainRule or _Conf.limitUaModulesIsOn then
         Guard:limitUaModules(domain,ip, reqUri, address, headers)
       end
   
       --限制IP请求速率模块
-      if getDrule(domain) or _Conf.limitReqModulesIsOn then --limitReq模块是否开启
-        Guard:debug("[limitReqModules] limitReqModules is on.",ip,reqUri)
+      if domainRule or _Conf.limitReqModulesIsOn then --limitReq模块是否开启
         Guard:limitReqModules(domain,ip,reqUri,address)
       end
   
       --302转向模块
-      local redirectOn = _Conf.dict_captcha:get("redirectOn")
-      if redirectOn == 1 then --判断转向模块是否开启
-        Guard:debug("[redirectModules] redirectModules is on.",ip,reqUri)
+      if domainRule or _Conf.redirectModulesIsOn then --判断转向模块是否开启
         Guard:redirectModules(domain,ip,reqUri,address)
       end 
   
       --js跳转模块
-      local jsOn = _Conf.dict_captcha:get("jsOn")
-      if jsOn == 1 then --判断js跳转模块是否开启
-        Guard:debug("[JsJumpModules] JsJumpModules is on.",ip,reqUri)
+      if domainRule or _Conf.JsJumpModulesIsOn then --判断js跳转模块是否开启
         Guard:JsJumpModules(domain,ip,reqUri,address)
       end
       
       --cookie验证模块
-      local cookieOn = _Conf.dict_captcha:get("cookieOn")
-      if cookieOn == 1 then --判断是否开启cookie模块
-        Guard:debug("[cookieModules] cookieModules is on.",ip,reqUri)
+      if domainRule or _Conf.cookieModulesIsOn then --判断是否开启cookie模块
         Guard:cookieModules(domain,ip,reqUri,address)
       end
         

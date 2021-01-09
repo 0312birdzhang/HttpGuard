@@ -3,6 +3,9 @@ local cjson_safe = require "cjson.safe"
 
 --开关转换为true或false函数
 local function optionIsOn(options)
+  if options == nil or options == "" then
+    return false
+  end
 	local options = string.lower(options)
 	if options == "on" then
 		return true
@@ -241,7 +244,13 @@ _Conf = {
 	normalCount = 0,
 	exceedCount = 0,
 	
-	dJsonDir = Config.dJsonDir
+	dJsonDir = Config.dJsonDir,
+	
+	limitIpState = "limitIpState",
+	limitUaState = "limitUaState",
+	cookieState = "cookieState",
+	jsJumpState = "jsJumpState",
+	redirectState = "redirectState"
   	
 }
 
@@ -302,7 +311,7 @@ end
 loadDLreg(_Conf.dJsonDir,_Conf.dict_domain)
 
 -- 获取域名是否存在或开启规则
-function getDrule(domain)
+function getDomainRule(domain)
   local domainRule = _Conf.dict_domain:get(domain)
    -- ngx.log(ngx.ERR,domainRule)
   if domainRule and optionIsOn(cjson_safe.decode(domainRule).state) then
@@ -310,6 +319,7 @@ function getDrule(domain)
   end
   return false
 end
+
 
 -- 获取域名的blockAction
 function getDBrule(domain)
@@ -323,7 +333,8 @@ end
 
 -- 获取域名的规则
 -- 支持nginx location匹配规则
-function getDLrule(domain,address)
+-- 根据stateName复用location
+function getDomainLocationRule(domain,address,stateName)
   local domainInfo = cjson_safe.decode(_Conf.dict_domain:get(domain))
   if domainInfo then
      local domainRule =  domainInfo.locations
@@ -331,14 +342,14 @@ function getDLrule(domain,address)
        local locations = {}
        for k,j in pairs(domainRule) do
          -- =前缀的指令严格匹配这个查询
-         if startswith(k,"=") and ( "= ".. address == k  or "=".. address == k ) and optionIsOn(j.state) then
+         if startswith(k,"=") and ( "= ".. address == k  or "=".. address == k ) and optionIsOn(j[stateName]) then
            -- ngx.log(ngx.ERR,"location =")
            return j
          -- 普通字符匹配
          elseif startswith(k,"^ ~") or startswith(k,"^~")  then
            k = string.gsub(k,"%~","")
            k = string.gsub(k,"% ","")
-           if string.find(address,k) and optionIsOn(j.state) then
+           if string.find(address,k) and optionIsOn(j[stateName]) then
            -- ngx.log(ngx.ERR,"location ^~")
              return j
            end
@@ -347,13 +358,13 @@ function getDLrule(domain,address)
            k = string.gsub(k,"%(","([")
            k = string.gsub(k,"%)","])")
            k = string.gsub(k,"%~ ","")
-           if string.find(address,k) and optionIsOn(j.state) then
+           if string.find(address,k) and optionIsOn(j[stateName]) then
            -- ngx.log(ngx.ERR,"location ~")
              return j
            end
          end
          -- 字符串匹配
-         if string.find(address,k) and optionIsOn(j.state) then
+         if string.find(address,k) and optionIsOn(j[stateName]) then
            table.insert(locations,k)
          end
        end

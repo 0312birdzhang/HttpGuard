@@ -1,52 +1,76 @@
 [
     {
-    "ops.corp.flamingo-inc.com":{
-        "state":"On",
-        "blockAction":"captcha",
-        "locations":{
-            "/":{
-                "state":"On",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-            },
-            "/test":{
-                "state":"Off",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-           },
-           "/test/abc":{
-                "state":"Off",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-           }
+        "a.example.com": {
+            "state": "On",
+            "blockAction": "captcha",
+            "locations": {
+                "/": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                },
+                "/test": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                },
+                "/test/abc": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                }
+            }
+        },
+        "b.example.cn": {
+            "state": "On",
+            "blockAction": "forbidden",
+            "locations": {
+                "/": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                },
+                "/test": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                },
+                "/api": {
+                    "limitIpState": "On",
+                    "limitUaState": "Off",
+                    "redirectState": "Off",
+                    "jsJumpState": "Off",
+                    "cookieState": "Off",
+                    "maxReqs": 10,
+                    "amongTime": 60,
+                    "blockTime": 600
+                }
+            }
         }
-      },
-      "h5.guopan.cn":{
-        "state":"On",
-        "blockAction":"forbidden",
-        "locations":{
-            "/":{
-                "state":"On",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-            },
-            "/test":{
-                "state":"Off",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-           },
-           "/api":{
-                "state":"Off",
-                "maxReqs":10,
-                "amongTime":60,
-                "blockTime":600
-           }
-        }
-      }
     }
 ]

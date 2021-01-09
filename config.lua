@@ -1,5 +1,5 @@
 -- http-guard安装目录，修改为实际安装到的目录。
-baseDir = '/etc/flamingo/openresty/script/waf/'
+baseDir = '/data/www/waf/'
 
 local Config = {
 	-- key是否动态生成,可选static,dynamic,如果选dynamic,下面所有的keySecret不需要更改,如果选static,修改手动修改下面的keySecret
@@ -105,7 +105,7 @@ local Config = {
 	logPath = "/data/logs/",
 	
 	-- 正则匹配静态文件
-	staticRegex = [[.*?\.(css|js|jpg|jpeg|png|ico|svg|swf)$]],
+	staticRegex = [[.*?\.(css|js|jpg|jpeg|png|ico|svg|swf|gif|mp4|wav|webp|webm)$]],
 	dJsonDir = baseDir .. "domains.json",
 }
 

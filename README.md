@@ -21,7 +21,7 @@ HttpGuard是基于openresty,以lua脚本语言开发的防cc攻击软件。而op
 
 ### 安装HttpGuard
 
-假设我们把HttpGuard安装到/data/www/waf/，当然你可以选择安装在任意目录。
+假设我们把HttpGuard安装到`/data/www/waf/`，当然你可以选择安装在任意目录。
 
 ```
 cd /data/www

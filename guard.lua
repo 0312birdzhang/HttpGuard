@@ -95,7 +95,9 @@ function Guard:blackListModules(domain,ip, reqUri, headers,address)
     self:takeAction(domain,ip,reqUri) --存在则执行相应动作
   end
 
-  if _Conf.limitUaModulesIsOn then
+  local domainLocationRule = getDomainLocationRule(domain,address,_Conf.limitUaState)
+  local domainRule = getDomainRule(domain)
+  if self:isMatch(domainRule,domainLocationRule,_Conf.limitUaModulesIsOn, address,address) then
     local userAgent = headers["user-agent"]
     --不存在UA直接抛验证码
     if not userAgent then
